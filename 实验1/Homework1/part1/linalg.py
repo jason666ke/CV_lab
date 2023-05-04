@@ -97,7 +97,7 @@ def euclidean_distance_native(u, v):
     ### YOUR CODE HERE
     square_sum = 0
     for index in range(len(u)):
-        square_sum += np.power(u[index]-v[index], 2)
+        square_sum += np.power(u[index] - v[index], 2)
     return np.sqrt(square_sum)
     ### END YOUR CODE
 

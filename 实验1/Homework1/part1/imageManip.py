@@ -1,9 +1,5 @@
-import math
-
 import numpy as np
 import skimage.io
-from PIL import Image
-from skimage import color, io
 
 
 def load(image_path):

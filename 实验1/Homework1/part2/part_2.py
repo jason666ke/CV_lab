@@ -1,14 +1,10 @@
-from Homework1.part1 import linalg
-from Homework1.part1 import imageManip
-
-import os
-import numpy as np
-from skimage import io
-import utils
-from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
-from sklearn.neighbors import KNeighborsClassifier
+import numpy as np
+from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score
+from sklearn.neighbors import KNeighborsClassifier
+
+import utils
 
 # 数据集根路径
 data_path = r'E:\大三下科目\计算机视觉\实验\实验1\Homework1\part2\data'
@@ -143,4 +139,3 @@ plt.xlabel('Number of Features')
 plt.ylabel('Accuracy')
 plt.title('Accuracy by Number of Features')
 plt.show()
-
