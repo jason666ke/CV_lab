@@ -18,6 +18,9 @@ images_divided_by_people = utils.collect_images(data_path)
 #     print("current index: {} images num: {}".format(index, len(images_divided_by_people[index])))
 # print(len(images_divided_by_people[0]))
 
+"""
+    Step 1
+"""
 # 划分训练集和测试集
 training_rate = 0.8
 train_set = []
@@ -60,6 +63,9 @@ reconstructed_test_set = reconstructed_test_set.reshape(test_people_index * test
 print("reconstructed train set shape: ", reconstructed_train_set.shape)
 print("reconstructed test set shape: ", reconstructed_test_set.shape)
 
+"""
+    Step 2-3
+"""
 # 重建特征脸（训练集）五张随机照片
 num_samples = 5
 train_title = "Comparison of Original and Reconstructed image from train data set"
@@ -67,6 +73,9 @@ test_title = "Comparison of Original and Reconstructed image from test data set"
 utils.compare_original_and_reconstructed_image(train_set, reconstructed_train_set, num_samples, train_title)
 utils.compare_original_and_reconstructed_image(test_set, reconstructed_test_set, num_samples, test_title)
 
+"""
+    Step 4
+"""
 # 输出降维后每个新特征向量所占的信息量百分比
 explained_variance_ratio = pca.explained_variance_ratio_
 for i, ratio in enumerate(explained_variance_ratio):
@@ -77,6 +86,9 @@ total_variance = np.sum(explained_variance_ratio)
 print(f"Total variance explained by all components: {total_variance * 100:.2f}% of total variance in the data")
 print(f"Ratio of total variance explained: {total_variance * 100:.2f}%")
 
+"""
+    Step 5
+"""
 # 设置特征个数上限
 max_features = 150
 
@@ -95,6 +107,9 @@ plt.ylabel('Total Variance Explained')
 plt.title('Total Variance Explained by Number of Features')
 plt.show()
 
+"""
+    Step 6
+"""
 # 训练标签
 train_labels = [num for num in range(40) for _ in range(8)]
 test_labels = [num for num in range(40) for _ in range(2)]
