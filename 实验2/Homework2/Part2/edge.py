@@ -17,28 +17,23 @@ def conv(image, kernel):
     Returns:
         out: numpy array of shape (Hi, Wi).
     """
-    # Get the kernel dimensions
-    kh, kw = kernel.shape
+    Hi, Wi = image.shape
+    Hk, Wk = kernel.shape
+    out = np.zeros((Hi, Wi))
 
-    # Compute the number of pixels to be padded
-    ph = kh // 2
-    pw = kw // 2
+    # For this assignment, we will use edge values to pad the images.
+    # Zero padding will make derivatives at the image boundary very big,
+    # whereas we want to ignore the edges at the boundary.
+    pad_width0 = Hk // 2
+    pad_width1 = Wk // 2
+    pad_width = ((pad_width0, pad_width0), (pad_width1, pad_width1))
+    padded = np.pad(image, pad_width, mode='edge')
 
-    # Pad the image with zeros
-    padded_image = zero_pad(image, ph, pw)
+    flipped = np.flip(kernel)
+    f = np.vectorize(lambda i, j: np.sum(padded[i:(i + Hk), j:(j + Wk)] * flipped))
+    out = f(np.arange(Hi)[:, np.newaxis], np.arange(Wi))
 
-    # Get the dimensions of the padded image
-    ih, iw = padded_image.shape
-
-    # Create an empty output array
-    output = np.zeros_like(image)
-
-    # Compute convolution using array operations
-    for i in range(ph, ih - ph):
-        for j in range(pw, iw - pw):
-            output[i - ph, j - pw] = np.sum(padded_image[i - ph:i + ph + 1, j - pw:j + pw + 1] * kernel)
-
-    return output
+    return out
 
 def gaussian_kernel(size, sigma):
     """ Implementation of Gaussian Kernel.
@@ -73,8 +68,10 @@ def partial_x(img):
     Returns:
         out: x-derivative image.
     """
-    dx = np.array([[-0.5, 0, 0.5], [-0.5, 0, 0.5], [-0.5, 0, 0.5]])
-    return conv(img, dx)
+    filter_x = np.array([[0.5, 0, -0.5]])
+    out = conv(img, filter_x)
+    # print(out)
+    return out
 
 def partial_y(img):
     """ Computes partial y-derivative of input img.
@@ -87,9 +84,10 @@ def partial_y(img):
     Returns:
         out: y-derivative image.
     """
-    dy = np.array([[-0.5, -0.5, -0.5], [0, 0, 0], [0.5, 0.5, 0.5]])
-    print(conv(img, dy))
-    return conv(img, dy)
+    filter_y = np.array([[0.5, 0, -0.5]]).T
+    out = conv(img, filter_y)
+    # print(out)
+    return out
 
 def gradient(img):
     """ Returns gradient magnitude and direction of input img.
@@ -109,9 +107,11 @@ def gradient(img):
     G = np.zeros(img.shape)
     theta = np.zeros(img.shape)
 
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    G_x = partial_x(img)
+    G_y = partial_y(img)
+    G = np.sqrt(G_x ** 2 + G_y ** 2)
+    theta = np.arctan2(G_y, G_x) * 180 / np.pi
+    theta[theta < 0] += 360
 
     return G, theta
 
@@ -136,10 +136,18 @@ def non_maximum_suppression(G, theta):
     theta = np.floor((theta + 22.5) / 45) * 45
     theta = (theta % 360.0).astype(np.int32)
 
-    #print(G)
-    ### BEGIN YOUR CODE
-    pass
-    ### END YOUR CODE
+    G_padded = np.pad(G, ((1, 1), (1, 1)))
+    dists = [
+        (0, 1), (1, 1), (1, 0), (1, -1)
+    ]
+    for i in range(1, H + 1):
+        for j in range(1, W + 1):
+            t = (theta[i - 1, j - 1] // 45) % len(dists)
+            dist = dists[t]
+            di, dj = (i + dist[0]), (j + dist[1])
+            ei, ej = (i - dist[0]), (j - dist[1])
+            if not (G_padded[i, j] <= G_padded[di, dj] or G_padded[i, j] <= G_padded[ei, ej]):
+                out[i - 1, j - 1] = G_padded[i, j]
 
     return out
 
@@ -159,12 +167,11 @@ def double_thresholding(img, high, low):
             higher threshold and greater than the lower threshold.
     """
 
-    strong_edges = np.zeros(img.shape, dtype=np.bool)
-    weak_edges = np.zeros(img.shape, dtype=np.bool)
+    strong_edges = np.zeros(img.shape, dtype=bool)
+    weak_edges = np.zeros(img.shape, dtype=bool)
 
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    strong_edges = img > high
+    weak_edges = (img <= high) & (img > low)
 
     return strong_edges, weak_edges
 
@@ -214,16 +221,24 @@ def link_edges(strong_edges, weak_edges):
 
     H, W = strong_edges.shape
     indices = np.stack(np.nonzero(strong_edges)).T
-    edges = np.zeros((H, W), dtype=np.bool)
+    edges = np.zeros((H, W), dtype=bool)
 
     # Make new instances of arguments to leave the original
     # references intact
     weak_edges = np.copy(weak_edges)
     edges = np.copy(strong_edges)
 
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    for i in range(len(indices)):
+        y, x = indices[i]
+        queue = [(y, x)]
+        while len(queue) > 0:
+            y, x = queue.pop(0)
+            edges[y, x] = True
+            neighbors = get_neighbors(y, x, H, W)
+            for ny, nx in neighbors:
+                if weak_edges[ny, nx]:
+                    queue.append((ny, nx))
+                    weak_edges[ny, nx] = False
 
     return edges
 
@@ -239,8 +254,9 @@ def canny(img, kernel_size=5, sigma=1.4, high=20, low=15):
     Returns:
         edge: numpy array of shape(H, W).
     """
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    G, theta = gradient(conv(img, gaussian_kernel(kernel_size, sigma)))
+    G = non_maximum_suppression(G, theta)
+    strong_edges, weak_edges = double_thresholding(G, high, low)
+    edge = link_edges(strong_edges, weak_edges)
 
     return edge

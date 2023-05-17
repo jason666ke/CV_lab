@@ -51,9 +51,9 @@ def zero_pad(image, pad_height, pad_width):
         out: numpy array of shape (H+2*pad_height, W+2*pad_width).
     """
     H, W = image.shape
-    padded_image = np.zeros((H + 2 * pad_height, W + 2 * pad_width), dtype=image.dtype)
-    padded_image[pad_height:-pad_height, pad_width:-pad_width] = image
-    return padded_image
+    out = None
+    out = np.pad(image, ((pad_height, pad_height), (pad_width, pad_width)))
+    return out
 
 
 def conv_fast(image, kernel):
